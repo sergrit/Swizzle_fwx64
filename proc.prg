@@ -55,6 +55,7 @@ Procedure ClosedAll
 	ClosedAllExe(PNameHola)
 	ClosedAllExe(PNameWind)
 	ClosedAllExe(PNameDumb)
+	ClosedAllExe(PNameTor)
 EndProc
 ****************************************
 Function httping
@@ -62,7 +63,15 @@ Local lpf,lcPing
 	lpf=k_drive+"wping.txt"
 	SafeDel(lpf)
 	*px.Run([cmd /c "]+k_drive+[wget.exe" -e https_proxy=127.0.0.1:18080 -O wping.txt https://www.dropbox.com/s/cpan5ywqv9w9eob/wping.txt?dl=1],0,1)
-	px.Run([cmd /c "]+k_drive+[wget.exe" -e https_proxy=]+m->Bindadd+[ -O wping.txt https://www.google.com/images/branding/googlelogo/1x/googlelogo_color_272x92dp.png],0,1)
+	If TorMode
+		px.Run([curl --socks5-hostname ]+m->Socs5Adr+[ -L -o wping.txt https://www.google.com/images/branding/googlelogo/1x/googlelogo_color_272x92dp.png],DebugMode,1)
+	Else
+		If fCurl="1"
+			px.Run([curl -x ]+m->Bindadd+[ -L -o wping.txt https://www.google.com/images/branding/googlelogo/1x/googlelogo_color_272x92dp.png],DebugMode,1)
+		Else
+			px.Run([cmd /c "]+k_drive+[wget.exe" -e https_proxy=]+m->Bindadd+[ -O wping.txt https://www.google.com/images/branding/googlelogo/1x/googlelogo_color_272x92dp.png],DebugMode,1)
+		EndIf
+	EndIf
 	llping=FileSize(lpf)>0
 	SafeDel(lpf)
 	Return llPing
@@ -78,6 +87,11 @@ Function WaitExe
 		If mListApp(lexename)=0 
 			Wait WINDOW "" TIMEOUT 1
 		Else			
+			If fCurl="1"
+				WriteActLog("(*) Used Curl...")
+			Else
+				WriteActLog("(*) Used Wget...")
+			EndIf
 			stray.TipText="(*) Proxy pinging (1 from 3)..."
 			WriteActLog(stray.TipText)
 			Wait WINDOW "" TIMEOUT 1
@@ -118,18 +132,22 @@ Function FromCache
 	Lparameters ltproxy,ltcountry
 	Local lret
 	lret=.f.
-	Select proxyvpn
-	Locate for tp=ltproxy .and. Alltrim(country)==Alltrim(ltcountry)
-	If Found()
-		lret=.t.
-		If tdupdate=Date()
-			stray.TipText = Alltrim(tstr)
-	  		WriteActLog(stray.TipText+Chr(13)+Chr(10))
-	  		Wait WINDOW "" TIMEOUT 2
+	If !TorMode
+		Select proxyvpn
+		Locate for tp=ltproxy .and. Alltrim(country)==Alltrim(ltcountry)
+		If Found()
+			lret=.t.
+			If tdupdate=Date()
+				stray.TipText = Alltrim(tstr)
+		  		WriteActLog(stray.TipText+Chr(13)+Chr(10))
+		  		Wait WINDOW "" TIMEOUT 2
+			Else
+				RunWget(ltproxy,ltcountry)
+			EndIf
+	  		*stray.ShowBalloonTip(Alltrim(stray.TipText),"Proxy active:",1,3)	
 		Else
 			RunWget(ltproxy,ltcountry)
 		EndIf
-  		*stray.ShowBalloonTip(Alltrim(stray.TipText),"Proxy active:",1,3)	
 	Else
 		RunWget(ltproxy,ltcountry)
 	EndIf
@@ -190,6 +208,7 @@ EndFunc
 ****************************************
 Procedure RunDumb
 	StartRun()
+	TorMode=.f.
 	WriteActLog([(+) Dumbproxy is starting...])
 	If !CoreDumb()
 		WriteActLog([(+) Restart Dumbproxy...])
@@ -208,6 +227,38 @@ Procedure RunDumb
 	EndActLog()
 EndProc
 ****************************************
+Function CoreTor
+Lparameters lcountry
+	lret=.f.
+	If File(Alltrim(Argtor))
+		px.Run([cmd /c "]+Argtor+[" --SocksPort ]+Socs5Adr,DebugMode,0)
+		If WaitExe(PNameTor)<6
+			FromCache("T","")		
+			lret=.t.
+		EndIf 
+	Else
+		WriteActLog([])
+		WriteActLog([(-) Invalid path to tor.exe...])
+		Wait WINDOW "" TIMEOUT 2
+	EndIf	
+	 Return lret
+EndFunc
+****************************************
+Procedure RunTor
+Lparameters lcountry
+	StartRun()
+	TorMode=.t.
+	WriteActLog([(+) Tor proxy is starting...])
+	If !CoreTor(lcountry)
+			NotRsp([Tor proxy "])
+	Else
+		If SpeedTest="1"	
+			Speedtest()
+		EndIf	
+	EndIf
+	EndActLog()
+EndProc
+****************************************
 Function CoreOpera
 Lparameters lcountry
 	px.Run([cmd /c "]+k_drive+PNameOpera+[" -bind-address ]+Bindadd+[ -country ]+lcountry+[ ]+ArgOpera,DebugMode,0)
@@ -222,6 +273,7 @@ EndFunc
 Procedure RunOpera
 Lparameters lcountry
 	StartRun()
+	TorMode=.f.
 	WriteActLog([(+) Opera proxy is starting...])
 	If !CoreOpera(lcountry)
 			NotRsp([Opera proxy "]+lcountry+["])
@@ -250,6 +302,7 @@ EndFunc
 Procedure RunHola 
 Lparameters lcountry
 	StartRun()
+	TorMode=.f.
 	WriteActLog([(+) Hola proxy is starting...])
 	If !CoreHola(lcountry)
 			NotRsp([Hola proxy "]+lcountry+["])
@@ -281,6 +334,7 @@ EndFunc
 ****************************************
 Procedure RunWinds
 Lparameters lcountry
+	TorMode=.f.
 	If File("wndstate.json")
 		StartRun()
 		WriteActLog([(+) Windscribe proxy is starting...])
@@ -305,10 +359,10 @@ EndProc
 *==============================================================================
 Procedure SAbout
 	Do case
-		Case File(k_drive+"switchvpn64.exe")
-			lfile=k_drive+"switchvpn64.exe"
-		Case File(k_drive+"switchvpn32.exe")
-			lfile=k_drive+"switchvpn32.exe"
+		Case File(k_drive+"Swizzle64.exe")
+			lfile=k_drive+"Swizzle64.exe"
+		Case File(k_drive+"Swizzle32.exe")
+			lfile=k_drive+"Swizzle32.exe"
 		Otherwise
 			lfile=""
 	EndCase
@@ -317,9 +371,11 @@ Procedure SAbout
 		Agetfileversion("vermas",lfile)
 		lstr="Program @2022-2025 by Sergiy Grytsjuk"+Chr(13)+Chr(10)+;
 		"Version: "+Alltrim(vermas(4))+Chr(13)+Chr(10)+;
-		"Download at: https://github.com/sergrit/SwitchVpn/"+Chr(13)+Chr(10)+;
+		"Download at: https://github.com/sergrit/Swizzle/"+Chr(13)+Chr(10)+;
 		""+Chr(13)+Chr(10)+;
-		"Snawoot (Vladislav Yarmak) site: https://github.com/Snawoot"
+		"Snawoot (Vladislav Yarmak) site: https://github.com/Snawoot"+Chr(13)+Chr(10)+;
+		""+Chr(13)+Chr(10)+;
+		"Tor Expert Bundle site: https://www.torproject.org/download/tor/"
 		Release vermas
 		StrToFile(lstr,"actlog.log")
 		ClearActLog()
@@ -360,9 +416,14 @@ Function FileSize
 EndFunc
 Procedure Setsysproxy
 	StartActLog()
-	WriteActLog([(+) Set Bind Address as System...]+Chr(13)+Chr(10))
-	px.Run([cmd /c "powershell -command ""$reg = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings'; Set-ItemProperty -Path $reg -Name ProxyEnable -Value 1; Set-ItemProperty -Path $reg -Name ProxyServer -Value ']+Bindadd+['"""], 0, 1)
-	WriteActLog([(*) Done.])
+	If !TorMode
+		WriteActLog([(+) Set Bind Address as System...]+Chr(13)+Chr(10))
+		px.Run([cmd /c "powershell -command ""$reg = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings'; Set-ItemProperty -Path $reg -Name ProxyEnable -Value 1; Set-ItemProperty -Path $reg -Name ProxyServer -Value ']+Bindadd+['"""], 0, 1)
+		WriteActLog([(*) Done.])
+	Else
+		WriteActLog([])
+		WriteActLog([(-) Windows does not support SOCKS5 system proxy.])
+	EndIf
 	Wait WINDOW "" timeout 1
 	EndActLog()
 EndProc
@@ -376,18 +437,34 @@ Procedure UNsetsysproxy
 EndProc
 Procedure SpeedTest
 	Lparameters lshowlog
-	lstbat=["]+k_drive+[speedtest.bat"]
+	If fCurl="1"
+		lstbat=["]+k_drive+[speedcurl.bat"]
+	Else
+		lstbat=["]+k_drive+[speedwget.bat"]
+	EndIf
 	If File(lstbat)
 		If Pcount()>0
 			StartActLog()
 		EndIf
 		WriteActLog("")
-		WriteActLog("(*) Speed testing...")
+		If fCurl="1"
+			WriteActLog("(*) Speed testing used curl...")
+		Else
+			WriteActLog("(*) Speed testing used wget...")
+		EndIf
 		lstfile=["]+k_drive+[st.txt"]
 		If File(lstfile)
 	   		SafeDel(lstfile)
 		EndIf
-		px.Run([cmd /c "]+k_drive+["speedtest.bat ]+Bindadd+[ > st.txt],DebugMode,1)
+		If fCurl="1"
+			If TorMode
+				px.Run([cmd /c "]+k_drive+["speedsocs5.bat ]+Socs5Adr+[ > st.txt],DebugMode,1)
+			Else
+				px.Run([cmd /c "]+k_drive+["speedcurl.bat ]+Bindadd+[ > st.txt],DebugMode,1)
+			EndIf	
+		Else
+			px.Run([cmd /c "]+k_drive+["speedwget.bat ]+Bindadd+[ > st.txt],DebugMode,1)
+		EndIf
 		If File(lstfile)
 			WriteActLog("(+) Connection speed: "+Chrtran(Chrtran(FILETOSTR(lstfile),Chr(13),""),Chr(10),""))
 	   		SafeDel(lstfile)
@@ -407,8 +484,18 @@ Procedure RunWget
 	If File(lxmlfile)
    		SafeDel(lxmldel)
 	EndIf
-	lstr=[cmd /c "]+k_drive+[wget.exe" -e https_proxy=]+Bindadd+[ -O wget.txt https://browserleaks.com/ip]
-	px.Run(lstr,0,1)
+	* curl -x 127.0.0.1:18080 -L -o curl.txt https://browserleaks.com/ip
+	* curl --socks5-hostname 127.0.0.1:9050 -L -o curl.txt https://browserleaks.com/ip
+	If TorMode
+			px.Run([curl --socks5-hostname ]+m->Socs5Adr+[ -L -o wget.txt https://browserleaks.com/ip],DebugMode,1)
+	Else
+		If fCurl="1"
+			px.Run([curl -x ]+m->Bindadd+[ -L -o wget.txt https://browserleaks.com/ip],DebugMode,1)
+		Else
+			lstr=[cmd /c "]+k_drive+[wget.exe" -e https_proxy=]+Bindadd+[ -O wget.txt https://browserleaks.com/ip]
+			px.Run(lstr,DebugMode,1)
+		EndIf
+	EndIf
 	If File(lxmlfile) .and. FileSize(lxmlfile)>0
 		cXML = FILETOSTR(lxmlfile)
 		CRLF=CHR(13)+CHR(10)
@@ -453,6 +540,8 @@ Procedure RunWget
 				lresult="(+) Windscribe proxy is active:"+Chr(13)+Chr(10)+lresult	
 			Case ltproxy="D"
 				lresult="(+) Dumbproxy is active:"+Chr(13)+Chr(10)+lresult	
+			Case ltproxy="T"
+				lresult="(+) Tor proxy is active:"+Chr(13)+Chr(10)+lresult	
 		EndCase 
 		Select proxyvpn
 		Locate for tp=ltproxy .and. Alltrim(country)==Alltrim(ltcountry)

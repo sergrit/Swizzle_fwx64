@@ -148,25 +148,29 @@ DEFINE BAR 1 OF shortcut PROMPT "Opera VPN"
 DEFINE BAR 2 OF shortcut PROMPT "Hola  VPN"
 DEFINE BAR 3 OF shortcut PROMPT "Windscribe VPN"
 DEFINE BAR 4 OF shortcut PROMPT "Dumbproxy"
-Define Bar 5 OF shortcut prompt "\-" COLOR SCHEME 4
-DEFINE BAR 6 OF shortcut PROMPT "Set as System"
-DEFINE BAR 7 OF shortcut PROMPT "Unset as System"
-DEFINE BAR 8 OF shortcut PROMPT "Speed test"
-Define Bar 9 OF shortcut prompt "\-" COLOR SCHEME 4
-DEFINE BAR 10 OF shortcut PROMPT "Open Activity Log"
-DEFINE BAR 11 OF shortcut PROMPT "Settings"
-DEFINE BAR 12 OF shortcut PROMPT "About SwitchVPN"
-Define Bar 13 OF shortcut prompt "\-" COLOR SCHEME 4
-DEFINE BAR 14 OF shortcut PROMPT "Close SwitchVPN" picture "delete.ico"
+DEFINE BAR 5 OF shortcut PROMPT "Tor Expert Bundle"
+Define Bar 6 OF shortcut prompt "\-" COLOR SCHEME 4
+DEFINE BAR 7 OF shortcut PROMPT "Set as System"
+DEFINE BAR 8 OF shortcut PROMPT "Unset as System"
+DEFINE BAR 9 OF shortcut PROMPT "Speed test"
+*DEFINE BAR 10 OF shortcut PROMPT "Check version"
+Define Bar 11 OF shortcut prompt "\-" COLOR SCHEME 4
+DEFINE BAR 12 OF shortcut PROMPT "Open Activity Log"
+DEFINE BAR 13 OF shortcut PROMPT "Settings"
+DEFINE BAR 14 OF shortcut PROMPT "About Swizzle"
+Define Bar 15 OF shortcut prompt "\-" COLOR SCHEME 4
+DEFINE BAR 16 OF shortcut PROMPT "Close Swizzle" picture "delete.ico"
 ON BAR 1 OF shortcut ACTIVATE POPUP opera
 ON BAR 2 OF shortcut ACTIVATE POPUP hola
 ON BAR 3 OF shortcut ACTIVATE POPUP winds
 ON SELECTION BAR 4 OF shortcut RunDumb()
-ON SELECTION BAR 6 OF shortcut Setsysproxy()
-ON SELECTION BAR 7 OF shortcut UNsetsysproxy()
-ON SELECTION BAR 8 OF shortcut SpeedTest("1")
-ON SELECTION BAR 10 OF shortcut StartActLog()
-ON SELECTION BAR 11 OF shortcut StartSet()
-ON SELECTION BAR 12 OF shortcut SAbout()
-ON SELECTION BAR 14 OF shortcut do exit
+ON SELECTION BAR 5 OF shortcut RunTor()
+ON SELECTION BAR 7 OF shortcut Setsysproxy()
+ON SELECTION BAR 8 OF shortcut UNsetsysproxy()
+ON SELECTION BAR 9 OF shortcut SpeedTest("1")
+ON SELECTION BAR 9 OF shortcut CheckVersion()
+ON SELECTION BAR 12 OF shortcut StartActLog()
+ON SELECTION BAR 13 OF shortcut StartSet()
+ON SELECTION BAR 14 OF shortcut SAbout()
+ON SELECTION BAR 16 OF shortcut do exit
 ACTIVATE POPUP shortcut

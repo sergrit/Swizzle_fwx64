@@ -9,31 +9,40 @@ k_drive=Addbs(LEFT(lcProgram, RAT("\", lcProgram)-1))
 SET DEFAULT TO (["]+k_drive+["])
 Set Procedure To proc
 On Shutdown do exit
-If mListApp('SwitchVpn64.exe')+mListApp('SwitchVpn32.exe')>1
-*If mListApp('SwitchVpn64.exe')>1
+If mListApp('Swizzle64.exe')+mListApp('Swizzle32.exe')>1
 	do exit2	
 Else
-	Public PNameOpera,PNameHola,PNameWind,PNameDumb
+	Public PNameOpera,PNameHola,PNameWind,PNameDumb,PNameTor,TorMode,Socs5Adr
 	PNameDumb="dumbproxy.windows-amd64.exe"
 	PNameOpera="opera-proxy.windows-amd64.exe"
 	PNameHola="hola-proxy.windows-amd64.exe"
 	PNameWind="windscribe-proxy.windows-amd64.exe"
+	PNameTor="tor.exe"
+	TorMode=.f.
 	Public stray,px
 	stray = NEWOBJECT('systray', 'systray.vcx')
-	stray.IconFile 	= "SwitchVpn64.ico"
+	stray.IconFile 	= "Swizzle64.ico"
 	stray.MenuText 	= "Systray.mpr"
 	stray.MenuTextIsMPR = .T.
 	stray.AddIconToSystray() 
 	px=CreateObject("wscript.shell")
 	ON ERRO do infoerro with erro(),prog(),line(1)
 	*
-	Public Bindadd,Runstart,ArgOpera,ArgHola,Argwind,Argdumb,DebugMode,SetSystem,SpeedTest
+	Public Bindadd,Runstart,ArgOpera,ArgHola,Argwind,Argdumb,DebugMode,SetSystem,SpeedTest,fCurl,Argtor
 	If !File("settings.dbf")
 		Create Table settings free (tset c(30),tvalue c(254))
 	Else	
 		Select 0
 		Use settings
 	EndIf	
+	Locate for Alltrim(tset)=="curl"
+	If !Found()
+		Append Blank
+		Replace tset with "curl"
+		Replace tvalue with "1"
+	EndIf
+	fCurl=Alltrim(tvalue)	
+
 	Locate for Alltrim(tset)=="debug-mode"
 	If !Found()
 		Append Blank
@@ -49,6 +58,14 @@ Else
 		Replace tvalue with "127.0.0.1:18080"
 	EndIf
 	Bindadd=Alltrim(tvalue)	
+	
+	Locate for Alltrim(tset)=="socs5-address"
+	If !Found()
+		Append Blank
+		Replace tset with "socs5-address"
+		Replace tvalue with "127.0.0.1:9050"
+	EndIf
+	Socs5Adr=Alltrim(tvalue)	
 	
 	Locate for Alltrim(tset)=="set-system"
 	If !Found()
@@ -105,6 +122,14 @@ Else
 		Replace tvalue with ""
 	EndIf
 	Argdumb=Alltrim(tvalue)	
+
+	Locate for Alltrim(tset)=="arg-tor"
+	If !Found()
+		Append Blank
+		Replace tset with "arg-tor"
+		Replace tvalue with "c:\Users\TOR\tor\tor.exe"
+	EndIf
+	Argtor=Alltrim(tvalue)	
 	use
 	*
 	If !File("proxyvpn.dbf")
@@ -122,6 +147,8 @@ Else
 			RunWinds("")
 		Case Lower(Alltrim(Runstart))=="d"
 			RunDumb()
+		Case Lower(Alltrim(Runstart))=="t"
+			RunTor()
 		Otherwise
 			If SetSystem="1"
 				StartRun()
