@@ -9,6 +9,7 @@ Swizzle can launch and manage the following proxies:
 - DumbProxy;
 - Tor Expert Bundle (via SOCKS5);
 - Usque. 
+
 Switching between proxies is done directly from the tray menu.
 
 System Proxy Mode.
