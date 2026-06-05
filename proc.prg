@@ -53,7 +53,7 @@ EndProc
 Procedure ClosedAll
 	ClosedAllExe(PNameOpera)
 	ClosedAllExe(PNameHola)
-	ClosedAllExe(PNameWind)
+	ClosedAllExe(PNameUsque)
 	ClosedAllExe(PNameDumb)
 	ClosedAllExe(PNameTor)
 EndProc
@@ -63,15 +63,26 @@ Local lpf,lcPing
 	lpf=k_drive+"wping.txt"
 	SafeDel(lpf)
 	*px.Run([cmd /c "]+k_drive+[wget.exe" -e https_proxy=127.0.0.1:18080 -O wping.txt https://www.dropbox.com/s/cpan5ywqv9w9eob/wping.txt?dl=1],0,1)
-	If TorMode
-		px.Run([curl --socks5-hostname ]+m->Socs5Adr+[ -L -o wping.txt https://www.google.com/images/branding/googlelogo/1x/googlelogo_color_272x92dp.png],DebugMode,1)
-	Else
-		If fCurl="1"
-			px.Run([curl -x ]+m->Bindadd+[ -L -o wping.txt https://www.google.com/images/branding/googlelogo/1x/googlelogo_color_272x92dp.png],DebugMode,1)
-		Else
-			px.Run([cmd /c "]+k_drive+[wget.exe" -e https_proxy=]+m->Bindadd+[ -O wping.txt https://www.google.com/images/branding/googlelogo/1x/googlelogo_color_272x92dp.png],DebugMode,1)
-		EndIf
-	EndIf
+	Do case
+		Case TorMode
+			px.Run([curl --socks5-hostname ]+m->Socs5Adr+[ -L -o wping.txt https://www.google.com/images/branding/googlelogo/1x/googlelogo_color_272x92dp.png],DebugMode,1)
+		Case UsqueMode
+			If ArgUsque="1"
+				If fCurl="1"
+					px.Run([curl -x ]+m->AdrUsque+[ -L -o wping.txt https://www.google.com/images/branding/googlelogo/1x/googlelogo_color_272x92dp.png],DebugMode,1)
+				Else
+					px.Run([cmd /c "]+k_drive+[wget.exe" -e https_proxy=]+m->AdrUsque+[ -O wping.txt https://www.google.com/images/branding/googlelogo/1x/googlelogo_color_272x92dp.png],DebugMode,1)
+				EndIf
+			Else
+				px.Run([curl --socks5-hostname ]+m->AdrUsque+[ -L -o wping.txt https://www.google.com/images/branding/googlelogo/1x/googlelogo_color_272x92dp.png],DebugMode,1)
+			EndIf
+		Otherwise
+			If fCurl="1"
+				px.Run([curl -x ]+m->Bindadd+[ -L -o wping.txt https://www.google.com/images/branding/googlelogo/1x/googlelogo_color_272x92dp.png],DebugMode,1)
+			Else
+				px.Run([cmd /c "]+k_drive+[wget.exe" -e https_proxy=]+m->Bindadd+[ -O wping.txt https://www.google.com/images/branding/googlelogo/1x/googlelogo_color_272x92dp.png],DebugMode,1)
+			EndIf
+	EndCase
 	llping=FileSize(lpf)>0
 	SafeDel(lpf)
 	Return llPing
@@ -132,7 +143,7 @@ Function FromCache
 	Lparameters ltproxy,ltcountry
 	Local lret
 	lret=.f.
-	If !TorMode
+	If !TorMode .and. !UsqueMode
 		Select proxyvpn
 		Locate for tp=ltproxy .and. Alltrim(country)==Alltrim(ltcountry)
 		If Found()
@@ -197,32 +208,38 @@ Procedure StartRun
 EndProc
 ****************************************
 Function CoreDumb
-	px.Run([cmd /c "]+k_drive+PNameDumb+[" -bind-address ]+Bindadd+[ ]+Argdumb,DebugMode,0)
 	lret=.f.
-	If WaitExe(PNameDumb)<6
-		FromCache("D","")		
-		lret=.t.
-	 EndIf 
+	If File(k_drive+PNameDumb)
+		px.Run([cmd /c "]+k_drive+PNameDumb+[" -bind-address ]+Bindadd+[ ]+Argdumb,DebugMode,0)
+		If WaitExe(PNameDumb)<6
+			FromCache("D","")		
+			lret=.t.
+		 EndIf 
+	Else
+		WriteActLog([])
+		WriteActLog([(-) Dumb proxy file missing...])
+		Wait WINDOW "" TIMEOUT 2
+	 EndIf
 	 Return lret
 EndFunc
 ****************************************
 Procedure RunDumb
 	StartRun()
 	TorMode=.f.
+	UsqueMode=.f.
 	WriteActLog([(+) Dumbproxy is starting...])
 	If !CoreDumb()
-		WriteActLog([(+) Restart Dumbproxy...])
-		ClosedAll()
-		If !CoreDumb()
+		If File(k_drive+PNameDumb)
 			NotRsp([Dumbproxy ])
-		Else
-			If SetSystem="1"
-				Setsysproxy()
-			EndIf	
-			If SpeedTest="1"	
-				Speedtest()
-			EndIf	
+		EndIf	
+	Else
+		If SetSystem="1"
+			Setsysproxy()
+		EndIf	
+		If SpeedTest="1"	
+			Speedtest()
 		EndIf
+		LastCheck("-dumb-")
 	EndIf
 	EndActLog()
 EndProc
@@ -248,25 +265,35 @@ Procedure RunTor
 Lparameters lcountry
 	StartRun()
 	TorMode=.t.
+	UsqueMode=.f.
 	WriteActLog([(+) Tor proxy is starting...])
 	If !CoreTor(lcountry)
+		If File(Alltrim(Argtor))
 			NotRsp([Tor proxy "])
+		EndIf	
 	Else
 		If SpeedTest="1"	
 			Speedtest()
-		EndIf	
+		EndIf
+		LastCheck("-tor-")
 	EndIf
 	EndActLog()
 EndProc
 ****************************************
 Function CoreOpera
 Lparameters lcountry
-	px.Run([cmd /c "]+k_drive+PNameOpera+[" -bind-address ]+Bindadd+[ -country ]+lcountry+[ ]+ArgOpera,DebugMode,0)
 	lret=.f.
-	If WaitExe(PNameOpera)<6
-		FromCache("O",lcountry)		
-		lret=.t.
-	 EndIf 
+	If File(k_drive+PNameOpera)
+		px.Run([cmd /c "]+k_drive+PNameOpera+[" -bind-address ]+Bindadd+[ -country ]+lcountry+[ ]+ArgOpera,DebugMode,0)
+		If WaitExe(PNameOpera)<6
+			FromCache("O",lcountry)		
+			lret=.t.
+		 EndIf 
+	Else
+		WriteActLog([])
+		WriteActLog([(-) Opera proxy file missing...])
+		Wait WINDOW "" TIMEOUT 2
+	 EndIf	
 	 Return lret
 EndFunc
 ****************************************
@@ -274,9 +301,12 @@ Procedure RunOpera
 Lparameters lcountry
 	StartRun()
 	TorMode=.f.
+	UsqueMode=.f.
 	WriteActLog([(+) Opera proxy is starting...])
 	If !CoreOpera(lcountry)
+		If File(k_drive+PNameOpera)
 			NotRsp([Opera proxy "]+lcountry+["])
+		EndIf	
 	Else
 		If SetSystem="1"
 			Setsysproxy()
@@ -284,17 +314,24 @@ Lparameters lcountry
 		If SpeedTest="1"	
 			Speedtest()
 		EndIf	
+		LastCheck("-opera-")
 	EndIf
 	EndActLog()
 EndProc
 ****************************************
 Function CoreHola
 Lparameters lcountry
-	px.Run([cmd /c "]+k_drive+PNameHola+[" -bind-address ]+Bindadd+[ -country ]+lcountry+[ ]+ArgHola,DebugMode,0)
 	lret=.f.
-	If WaitExe(PNameHola)<6
-		FromCache("H",lcountry)		
-		lret=.t.
+	If File(k_drive+PNameHola)
+		px.Run([cmd /c "]+k_drive+PNameHola+[" -bind-address ]+Bindadd+[ -country ]+lcountry+[ ]+ArgHola,DebugMode,0)
+		If WaitExe(PNameHola)<6
+			FromCache("H",lcountry)		
+			lret=.t.
+		EndIf
+	Else
+		WriteActLog([])
+		WriteActLog([(-) Hola proxy file missing...])
+		Wait WINDOW "" TIMEOUT 2
 	EndIf
 	Return lret
 EndFunc
@@ -303,9 +340,12 @@ Procedure RunHola
 Lparameters lcountry
 	StartRun()
 	TorMode=.f.
+	UsqueMode=.f.
 	WriteActLog([(+) Hola proxy is starting...])
 	If !CoreHola(lcountry)
+		If File(k_drive+PNameHola)
 			NotRsp([Hola proxy "]+lcountry+["])
+		EndIf	
 	Else
 		If SetSystem="1"
 			Setsysproxy()
@@ -313,48 +353,58 @@ Lparameters lcountry
 		If SpeedTest="1"	
 			Speedtest()
 		EndIf	
+		LastCheck("-hola-")
 	EndIf
 	EndActLog()	
 EndProc
 ****************************************
-Function CoreWind
-Lparameters lcountry
-	If !Empty(lcountry)
-		px.Run([cmd /c "]+k_drive+PNameWind+[ -bind-address ]+Bindadd+[ -location ]+lcountry+[ ]+ArgWind,DebugMode,0)
-	Else
-		px.Run([cmd /c "]+k_drive+PNameWind+[ -bind-address ]+Bindadd+[ ]+ArgWind,DebugMode,0)
-	EndIf	
+Function CoreUsque
+	Local lip,lport,lstr
 	lret=.f.
-	If WaitExe(PNameWind)<6
-		FromCache("H",lcountry)		
-		lret=.t.
+	If File(k_drive+PNameUsque)
+		lip = SUBSTR(AdrUsque, 1, AT(":", AdrUsque) - 1)
+		lport = SUBSTR(AdrUsque, AT(":", AdrUsque) + 1)
+		lstr = Iif(ArgUsque="1"," http-proxy "," socks ")+"-b "+lip+" -p "+lport
+		lrun=k_drive+PNameUsque+lstr
+		px.Run(m->lrun,DebugMode,0)
+		If WaitExe(PNameUsque)<6
+			FromCache("U","")		
+			lret=.t.
+		EndIf
+	Else
+		WriteActLog([])
+		WriteActLog([(-) Usque proxy file missing...])
+		Wait WINDOW "" TIMEOUT 2
 	EndIf
 	Return lret
 EndFunc
 ****************************************
-Procedure RunWinds
+Procedure RunUsque 
 Lparameters lcountry
+	StartRun()
 	TorMode=.f.
-	If File("wndstate.json")
-		StartRun()
-		WriteActLog([(+) Windscribe proxy is starting...])
-		If !CoreWind(lcountry)
-				NotRsp([Windscribe proxy "]+lcountry+["])
+	UsqueMode=.t.
+	If File(k_drive+"config.json")
+		WriteActLog([(+) Usque proxy is starting...])
+		If !CoreUsque()
+			If File(k_drive+PNameUsque)
+				NotRsp([Usque proxy ])
+			EndIf	
 		Else
 			If SetSystem="1"
 				Setsysproxy()
-			EndIf
+			EndIf	
 			If SpeedTest="1"	
 				Speedtest()
 			EndIf	
+			LastCheck("-usque-")
 		EndIf
-		EndActLog()	
 	Else
-		StartRun()
-		WriteActLog([(-) A file "wndstate.json" is required to start the Windscribe...])
-		Wait WINDOW "" TIMEOUT 2
-		EndActLog()	
+		WriteActLog([(-) For Usque to work, a "config.json" file is required! You can create it by running the command "./usque register".])
+		stray.TipText = [(+) Do Nothing...]
+		Wait WINDOW "" timeout 5
 	EndIf
+	EndActLog()	
 EndProc
 *==============================================================================
 Procedure SAbout
@@ -369,16 +419,29 @@ Procedure SAbout
 	If !Empty(lfile)		
 		Public vermas(1)
 		Agetfileversion("vermas",lfile)
-		lstr="Program @2022-2025 by Sergiy Grytsjuk"+Chr(13)+Chr(10)+;
+		lstr="Program @2022-2026 by Sergiy Grytsjuk"+Chr(13)+Chr(10)+;
 		"Version: "+Alltrim(vermas(4))+Chr(13)+Chr(10)+;
-		"Download at: https://github.com/sergrit/Swizzle/"+Chr(13)+Chr(10)+;
+		"Download at: "+LinkSwizzle+Chr(13)+Chr(10)+;
 		""+Chr(13)+Chr(10)+;
 		"Snawoot (Vladislav Yarmak) site: https://github.com/Snawoot"+Chr(13)+Chr(10)+;
 		""+Chr(13)+Chr(10)+;
-		"Tor Expert Bundle site: https://www.torproject.org/download/tor/"
+		"Opera proxy site: "+LinkOpera+Chr(13)+Chr(10)+;
+		""+Chr(13)+Chr(10)+;
+		"Hola proxy site: "+LinkHola+Chr(13)+Chr(10)+;
+		""+Chr(13)+Chr(10)+;
+		"Dumbproxy site: "+LinkDumb+Chr(13)+Chr(10)+;
+		""+Chr(13)+Chr(10)+;
+		"Tor Expert Bundle site: "+LinkTor+Chr(13)+Chr(10)+;
+		""+Chr(13)+Chr(10)+;
+		"Usque site: "+LinkUsque+Chr(13)+Chr(10)+;
+		""+Chr(13)+Chr(10)+;
+		"* Proxies are maintained by their respective developers."
+		
 		Release vermas
 		StrToFile(lstr,"actlog.log")
 		ClearActLog()
+		
+		
 	EndIf
 EndProc
 *==============================================================================
@@ -416,7 +479,7 @@ Function FileSize
 EndFunc
 Procedure Setsysproxy
 	StartActLog()
-	If !TorMode
+	If !TorMode .and. !(UsqueMode .and. ArgUsque#"1") 
 		WriteActLog([(+) Set Bind Address as System...]+Chr(13)+Chr(10))
 		px.Run([cmd /c "powershell -command ""$reg = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings'; Set-ItemProperty -Path $reg -Name ProxyEnable -Value 1; Set-ItemProperty -Path $reg -Name ProxyServer -Value ']+Bindadd+['"""], 0, 1)
 		WriteActLog([(*) Done.])
@@ -457,13 +520,27 @@ Procedure SpeedTest
 	   		SafeDel(lstfile)
 		EndIf
 		If fCurl="1"
-			If TorMode
-				px.Run([cmd /c "]+k_drive+["speedsocs5.bat ]+Socs5Adr+[ > st.txt],DebugMode,1)
-			Else
+			Do case 
+				case TorMode
+					px.Run([cmd /c "]+k_drive+["speedsocs5.bat ]+Socs5Adr+[ > st.txt],DebugMode,1)
+				Case  UsqueMode 
+					If ArgUsque="1"
+						px.Run([cmd /c "]+k_drive+["speedcurl.bat ]+AdrUsque+[ > st.txt],DebugMode,1)
+					Else
+						px.Run([cmd /c "]+k_drive+["speedsocs5.bat ]+AdrUsque+[ > st.txt],DebugMode,1)
+					EndIf				
+			Otherwise
 				px.Run([cmd /c "]+k_drive+["speedcurl.bat ]+Bindadd+[ > st.txt],DebugMode,1)
-			EndIf	
+			EndCase		
 		Else
-			px.Run([cmd /c "]+k_drive+["speedwget.bat ]+Bindadd+[ > st.txt],DebugMode,1)
+			Do case
+				Case UsqueMode
+					If ArgUsque="1"
+						px.Run([cmd /c "]+k_drive+["speedwget.bat ]+AdrUsque+[ > st.txt],DebugMode,1)
+					EndIf	
+			    Otherwise		
+					px.Run([cmd /c "]+k_drive+["speedwget.bat ]+Bindadd+[ > st.txt],DebugMode,1)
+			EndCase 		
 		EndIf
 		If File(lstfile)
 			WriteActLog("(+) Connection speed: "+Chrtran(Chrtran(FILETOSTR(lstfile),Chr(13),""),Chr(10),""))
@@ -486,16 +563,28 @@ Procedure RunWget
 	EndIf
 	* curl -x 127.0.0.1:18080 -L -o curl.txt https://browserleaks.com/ip
 	* curl --socks5-hostname 127.0.0.1:9050 -L -o curl.txt https://browserleaks.com/ip
-	If TorMode
+	Do case
+		case TorMode
 			px.Run([curl --socks5-hostname ]+m->Socs5Adr+[ -L -o wget.txt https://browserleaks.com/ip],DebugMode,1)
-	Else
-		If fCurl="1"
-			px.Run([curl -x ]+m->Bindadd+[ -L -o wget.txt https://browserleaks.com/ip],DebugMode,1)
-		Else
-			lstr=[cmd /c "]+k_drive+[wget.exe" -e https_proxy=]+Bindadd+[ -O wget.txt https://browserleaks.com/ip]
-			px.Run(lstr,DebugMode,1)
-		EndIf
-	EndIf
+		case UsqueMode
+			If ArgUsque="1"
+				If fCurl="1"
+					px.Run([curl -x ]+m->AdrUsque+[ -L -o wget.txt https://browserleaks.com/ip],DebugMode,1)
+				Else
+					lstr=[cmd /c "]+k_drive+[wget.exe" -e https_proxy=]+m->AdrUsque+[ -O wget.txt https://browserleaks.com/ip]
+					px.Run(lstr,DebugMode,1)
+				EndIf
+			Else
+				px.Run([curl --socks5-hostname ]+m->AdrUsque+[ -L -o wget.txt https://browserleaks.com/ip],DebugMode,1)
+			EndIf
+		Otherwise
+			If fCurl="1"
+				px.Run([curl -x ]+m->Bindadd+[ -L -o wget.txt https://browserleaks.com/ip],DebugMode,1)
+			Else
+				lstr=[cmd /c "]+k_drive+[wget.exe" -e https_proxy=]+m->Bindadd+[ -O wget.txt https://browserleaks.com/ip]
+				px.Run(lstr,DebugMode,1)
+			EndIf
+	EndCase
 	If File(lxmlfile) .and. FileSize(lxmlfile)>0
 		cXML = FILETOSTR(lxmlfile)
 		CRLF=CHR(13)+CHR(10)
@@ -536,8 +625,8 @@ Procedure RunWget
 				lresult="(+) Opera proxy is active:"+Chr(13)+Chr(10)+lresult	
 			Case ltproxy="H"
 				lresult="(+) Hola proxy is active:"+Chr(13)+Chr(10)+lresult	
-			Case ltproxy="W"
-				lresult="(+) Windscribe proxy is active:"+Chr(13)+Chr(10)+lresult	
+			Case ltproxy="U"
+				lresult="(+) Usque proxy is active:"+Chr(13)+Chr(10)+lresult	
 			Case ltproxy="D"
 				lresult="(+) Dumbproxy is active:"+Chr(13)+Chr(10)+lresult	
 			Case ltproxy="T"
@@ -626,3 +715,222 @@ ENDIF
 Wait WINDOW Alltrim(erromess3)+" Look in more detail errors.txt"
 Retu To Mast
 EndFunc
+*==============================================================================
+FUNCTION GetCurrentVersion
+    Lparameters prmTag
+    LOCAL lcFile, lcLine, lnHandle, lcVersion
+    lcFile = k_drive+"cver.txt"
+    lcVersion = ""
+	If prmTag == "-swizzle-"
+       Public vermas(1)
+		Agetfileversion("vermas",k_drive+"Swizzle64.exe")
+		lcVersion=Alltrim(vermas(4))
+		Release vermas
+	Else
+	    lnHandle = FOPEN(lcFile, 0)
+	    IF lnHandle < 0
+	        RETURN ""
+	    EndIf
+	    DO WHILE !FEOF(lnHandle)
+	        lcLine = ALLTRIM(FGETS(lnHandle))
+	        IF Alltrim(lcLine) == prmTag
+	            lcLine = ALLTRIM(FGETS(lnHandle))
+	            Do case
+	            	case prmTag == "-tor-"
+	                	lcVersion = Substr(lcLine,At("n",lcLine)+2,At("(",lcLine)-At("n",lcLine)-3)
+	            	case prmTag == "-usque-"
+	            		lcVersion = Alltrim(Right(lcLine,Len(lcLine)-At("v",lcLine,2)))
+	            Otherwise
+	                lcVersion = Alltrim(Right(lcLine,Len(lcLine)-At("v",lcLine)))
+	            EndCase
+	            EXIT
+	        ENDIF
+	    ENDDO
+	    =FCLOSE(lnHandle)
+	EndIf    
+    RETURN lcVersion
+ENDFUNC
+*==============================================================================
+Procedure WriteCompare
+	Lparameters prmTag
+	Local lTag
+	lTag=Upper(Substr(prmTag,2,1))+Substr(prmTag,3,Len(prmTag)-3)
+	lg1=GetCurrentVersion(prmTag)
+	lg2=GetIVersion(prmTag)
+	If !Empty(lg1)
+		If !Empty(lg2)
+			lcv=CompareVersions(lg1,lg2)
+			If lcv = -1
+				WriteActLog("(+) "+lTag+" update avaiable to v."+lg2)
+			Else		  	
+				WriteActLog("(*) "+lTag+" v."+lg1+" is up to date")
+			EndIf		
+		Else
+			WriteActLog("(-) "+lTag+" could not verify...")
+		EndIf
+	Else
+		WriteActLog("(-) "+lTag+" proxy file not found...")
+	EndIf	
+EndProc	
+*==============================================================================
+Procedure LastCheck
+	Lparameters prmTag
+	Local lTag,lv,lt,ldate
+	If ChVer="1"
+		WriteActLog([])
+		WriteActLog("(*) Version checking...")
+		lTag=Substr(prmTag,2,Len(prmTag)-2)
+		lv="LastCh"+lTag
+		lt="lastch-"+lTag
+		ldate=Ctod(&lv )
+		If Date()-Val(ChDay)+1 > ldate
+			Select 0
+			Use settings
+			Locate for Alltrim(tset)==lt
+			If Found()
+				Replace tvalue with Dtoc(Date())	
+			EndIf	
+			Use in settings
+			&lv = Dtoc(Date())
+			If !(prmTag=="-swizzle-")
+				GetCurrentFile()
+			EndIf	
+			WriteCompare(prmTag)
+			If File(k_drive+"cver.txt")
+				Safedel(k_drive+"cver.txt")
+			EndIf
+			Wait WINDOW "" TIMEOUT 2
+		EndIf
+	EndIf
+EndProc	
+*==============================================================================
+Procedure CheckVersion
+Local lg1,lg2,lcv
+	StartActLog()
+	WriteActLog("")
+	WriteActLog("(*) Version checking...")
+	GetCurrentFile()
+	WriteCompare("-swizzle-")
+	WriteCompare("-opera-")
+	WriteCompare("-hola-")
+	WriteCompare("-dumb-")
+	WriteCompare("-tor-")
+	WriteCompare("-usque-")
+	If File(k_drive+"cver.txt")
+		Safedel(k_drive+"cver.txt")
+	EndIf
+	Wait WINDOW "" timeout 2
+	EndActLog()
+EndProc
+*==============================================================================
+Procedure GetCurrentFile
+	If File(k_drive+"cver.txt")
+		Safedel(k_drive+"cver.txt")
+	EndIf	
+	px.Run([cmd /c "]+k_drive+["checkversion.bat ]+Alltrim(Argtor),DebugMode,1)
+EndProc
+***********************************************************************************
+FUNCTION GetGithubVersion
+	Lparameters tcFile
+    LOCAL lcHtml, loRegEx, loMatches, lcVersion
+    lcVersion = ""
+    lcHtml = FILETOSTR(tcFile)
+    loRegEx = CREATEOBJECT("VBScript.RegExp")
+    loRegEx.Global = .F.
+    loRegEx.IgnoreCase = .T.
+    loRegEx.Pattern = "v[0-9]+\.[0-9]+\.[0-9]+"
+    IF loRegEx.Test(lcHtml)
+        loMatches = loRegEx.Execute(lcHtml)
+        lcVersion = Substr(loMatches.Item(0).Value,2)
+    ENDIF
+    RETURN lcVersion
+EndFunc
+***********************************************************************************
+FUNCTION GetTorVersion
+	Lparameters tcFile
+    LOCAL lcHtml, loRegEx, loMatches, lcVersion
+    lcVersion = ""
+    lcHtml = FILETOSTR(tcFile)
+    loRegEx = CREATEOBJECT("VBScript.RegExp")
+    loRegEx.Global = .F.
+    loRegEx.IgnoreCase = .T.
+    loRegEx.Pattern = "\bv?\d+(?:\.\d+){1,3}\b"
+    IF loRegEx.Test(lcHtml)
+        loMatches = loRegEx.Execute(lcHtml)
+        lcVersion = loMatches.Item(0).Value
+    ENDIF
+    RETURN lcVersion
+EndFunc
+*========================================================================================================
+Function GetIVersion
+	Lparameters prmTag
+	Local dlink,lver,lv
+	lv="Link"+Substr(prmTag,2,Len(prmTag)-2)
+	dlink = &lv
+	*****************************************
+	If File(k_drive+"dproxy.html")
+		Safedel(k_drive+"dproxy.html")
+	EndIf	
+	Do case
+		Case prmTag="-swizzle-"
+			If fCurl="1"
+				px.Run([curl -L -o dproxy.html ]+dlink,DebugMode,1)
+			Else
+				lstr=[cmd /c "]+k_drive+[wget.exe" -O dproxy.html ]+dlink
+				px.Run(lstr,DebugMode,1)
+			EndIf
+		case TorMode
+			px.Run([curl --socks5-hostname ]+m->Socs5Adr+[ -L -o dproxy.html ]+dlink,DebugMode,1)
+		case UsqueMode
+			If ArgUsque="1"
+				If fCurl="1"
+					px.Run([curl -x ]+m->AdrUsque+[ -L -o dproxy.html ]+dlink,DebugMode,1)
+				Else
+					lstr=[cmd /c "]+k_drive+[wget.exe" -e https_proxy=]+m->AdrUsque+[ -O dproxy.html ]+dlink
+					px.Run(lstr,DebugMode,1)
+				EndIf
+			Else
+				px.Run([curl --socks5-hostname ]+m->AdrUsque+[ -L -o dproxy.html ]+dlink,DebugMode,1)
+			EndIf
+		Otherwise
+			If fCurl="1"
+				px.Run([curl -x ]+m->Bindadd+[ -L -o dproxy.html ]+dlink,DebugMode,1)
+			Else
+				lstr=[cmd /c "]+k_drive+[wget.exe" -e https_proxy=]+m->Bindadd+[ -O dproxy.html ]+dlink
+				px.Run(lstr,DebugMode,1)
+			EndIf
+	EndCase
+	If File(k_drive+"dproxy.html") .and. FileSize(k_drive+"dproxy.html")>0
+		If prmTag=="-tor-"
+			lver=GetTorVersion(k_drive+"dproxy.html")
+		Else
+			lver=GetGithubVersion(k_drive+"dproxy.html")
+		EndIf
+	Else
+		lver=""
+	EndIf
+	If File(k_drive+"dproxy.html")
+		Safedel(k_drive+"dproxy.html")
+	EndIf
+	Return lver 	
+EndFunc
+********************************************************************************
+Function CompareVersions
+Lparameters ver1, ver2
+Local i, n1, n2, maxParts
+maxParts = Max(Getwordcount(ver1, "."), Getwordcount(ver2, "."))
+For i = 1 To maxParts
+	n1 = Val(Getwordnum(ver1, i, "."))
+	n2 = Val(Getwordnum(ver2, i, "."))
+	If n1 < n2
+		Return -1
+	Else
+		If n1 > n2
+			Return 1
+		Endif
+	Endif
+Endfor
+Return 0
+Endfunc
+
+

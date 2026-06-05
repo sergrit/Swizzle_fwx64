@@ -97,63 +97,17 @@ ON SELECTION BAR 3 OF hola RunHola("de")
 ON SELECTION BAR 4 OF hola RunHola("ru")
 ON SELECTION BAR 5 OF hola RunHola("cz")
 
-
-DEFINE POPUP winds SHORTCUT RELATIVE FROM MROW(),MCOL()
-DEFINE BAR 1 OF winds PROMPT "Best Location"
-Define Bar 2 OF winds PROMPT "\-" COLOR SCHEME 4
-DEFINE BAR 3 OF winds PROMPT "Canada East/Montreal"
-DEFINE BAR 4 OF winds PROMPT "Canada East/Toronto"
-DEFINE BAR 5 OF winds PROMPT "Canada West/Vancouver"
-DEFINE BAR 6 OF winds PROMPT "France/Paris"
-DEFINE BAR 7 OF winds PROMPT "Germany/Frankfurt"
-DEFINE BAR 8 OF winds PROMPT "Hong Kong/Hong Kong"
-DEFINE BAR 9 OF winds PROMPT "Netherlands/Amsterdam"
-DEFINE BAR 10 OF winds PROMPT "Norway/Oslo"
-DEFINE BAR 11 OF winds PROMPT "Romania/Bucharest"
-DEFINE BAR 12 OF winds PROMPT "Switzerland/Zurich"
-DEFINE BAR 13 OF winds PROMPT "Turkey/Istanbul"
-DEFINE BAR 14 OF winds PROMPT "US Central/Atlanta"
-DEFINE BAR 15 OF winds PROMPT "US Central/Dallas"
-DEFINE BAR 16 OF winds PROMPT "US East/Chicago"
-DEFINE BAR 17 OF winds PROMPT "US East/Miami"
-DEFINE BAR 18 OF winds PROMPT "US East/New York"
-DEFINE BAR 19 OF winds PROMPT "US East/Washington DC"
-DEFINE BAR 20 OF winds PROMPT "US West/Los Angeles"
-DEFINE BAR 21 OF winds PROMPT "US West/Seattle"
-DEFINE BAR 22 OF winds PROMPT "United Kingdom/London"
-ON SELECTION BAR 1 OF winds RunWinds("")
-ON SELECTION BAR 3 OF winds RunWinds("Canada East/Montreal")
-ON SELECTION BAR 4 OF winds RunWinds("Canada East/Toronto")
-ON SELECTION BAR 5 OF winds RunWinds("Canada West/Vancouver")
-ON SELECTION BAR 6 OF winds RunWinds("France/Paris")
-ON SELECTION BAR 7 OF winds RunWinds("Germany/Frankfurt")
-ON SELECTION BAR 8 OF winds RunWinds("Hong Kong/Hong Kong")
-ON SELECTION BAR 9 OF winds RunWinds("Netherlands/Amsterdam")
-ON SELECTION BAR 10 OF winds RunWinds("Norway/Oslo")
-ON SELECTION BAR 11 OF winds RunWinds("Romania/Bucharest")
-ON SELECTION BAR 12 OF winds RunWinds("Switzerland/Zurich")
-ON SELECTION BAR 13 OF winds RunWinds("Turkey/Istanbul")
-ON SELECTION BAR 14 OF winds RunWinds("US Central/Atlanta")
-ON SELECTION BAR 15 OF winds RunWinds("US Central/Dallas")
-ON SELECTION BAR 16 OF winds RunWinds("US East/Chicago")
-ON SELECTION BAR 17 OF winds RunWinds("US East/Miami")
-ON SELECTION BAR 18 OF winds RunWinds("US East/New York")
-ON SELECTION BAR 19 OF winds RunWinds("US East/Washington DC")
-ON SELECTION BAR 20 OF winds RunWinds("US West/Los Angeles")
-ON SELECTION BAR 21 OF winds RunWinds("US West/Seattle")
-ON SELECTION BAR 22 OF winds RunWinds("United Kingdom/London")
-
 DEFINE POPUP shortcut SHORTCUT RELATIVE FROM MROW(),MCOL()
-DEFINE BAR 1 OF shortcut PROMPT "Opera VPN"
-DEFINE BAR 2 OF shortcut PROMPT "Hola  VPN"
-DEFINE BAR 3 OF shortcut PROMPT "Windscribe VPN"
+DEFINE BAR 1 OF shortcut PROMPT "Opera"
+DEFINE BAR 2 OF shortcut PROMPT "Hola"
+DEFINE BAR 3 OF shortcut PROMPT "Usque"
 DEFINE BAR 4 OF shortcut PROMPT "Dumbproxy"
 DEFINE BAR 5 OF shortcut PROMPT "Tor Expert Bundle"
 Define Bar 6 OF shortcut prompt "\-" COLOR SCHEME 4
 DEFINE BAR 7 OF shortcut PROMPT "Set as System"
 DEFINE BAR 8 OF shortcut PROMPT "Unset as System"
 DEFINE BAR 9 OF shortcut PROMPT "Speed test"
-*DEFINE BAR 10 OF shortcut PROMPT "Check version"
+DEFINE BAR 10 OF shortcut PROMPT "Check version"
 Define Bar 11 OF shortcut prompt "\-" COLOR SCHEME 4
 DEFINE BAR 12 OF shortcut PROMPT "Open Activity Log"
 DEFINE BAR 13 OF shortcut PROMPT "Settings"
@@ -162,13 +116,13 @@ Define Bar 15 OF shortcut prompt "\-" COLOR SCHEME 4
 DEFINE BAR 16 OF shortcut PROMPT "Close Swizzle" picture "delete.ico"
 ON BAR 1 OF shortcut ACTIVATE POPUP opera
 ON BAR 2 OF shortcut ACTIVATE POPUP hola
-ON BAR 3 OF shortcut ACTIVATE POPUP winds
+ON SELECTION BAR 3 OF shortcut RunUsque()
 ON SELECTION BAR 4 OF shortcut RunDumb()
 ON SELECTION BAR 5 OF shortcut RunTor()
 ON SELECTION BAR 7 OF shortcut Setsysproxy()
 ON SELECTION BAR 8 OF shortcut UNsetsysproxy()
 ON SELECTION BAR 9 OF shortcut SpeedTest("1")
-ON SELECTION BAR 9 OF shortcut CheckVersion()
+ON SELECTION BAR 10 OF shortcut CheckVersion()
 ON SELECTION BAR 12 OF shortcut StartActLog()
 ON SELECTION BAR 13 OF shortcut StartSet()
 ON SELECTION BAR 14 OF shortcut SAbout()
