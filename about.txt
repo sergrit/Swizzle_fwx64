@@ -32,15 +32,20 @@ For each proxy, you can specify:
 - Bind address (IP:Port), for example 127.0.0.1:18080;
 - additional command-line arguments (separately for Opera, Hola, and DumbProxy).
 
-Tor Support.
+Connection Speed Testing in Swizzle:
+- In the settings, you can specify a test file to be downloaded.
+- The speed test does not aim for precise measurement. Larger files provide higher accuracy, but the test is useful for determining the general order of magnitude (MB/s, KB/s).
+
+Tor Support:
 Swizzle includes built-in support for Tor Expert Bundle:
 - configurable path to tor.exe;
 - SOCKS5 address support (default 127.0.0.1:9050).
 
-New!!! Usque Cloudflare WARP client's MASQUE protocol Support.
+New!!! Usque Cloudflare WARP client's MASQUE protocol Support:
 Swizzle includes built-in support for Usque:
 - Port Type (http/socks5);
-- Address support (default 127.0.0.1:18080/9050).
+- Address support (default 127.0.0.1:18080/9050);
+- Additional arguments (example -s google.com -d 8.8.8.8).
 Attention! For Usque to work, a "config.json" file is required! You can create it by running the command "./usque register".
 
 Additional Features.
@@ -65,9 +70,6 @@ Full List of Required Files:
 - opera-proxy.windows-amd64.exe,
 - proxyvpn.DBF,
 - settings.DBF,
-- speedcurl.bat,
-- speedsocs5.bat,
-- speedwget.bat,
 - switchvpn64.exe,
 - swizzle64.ico,
 - systray.mpr,
@@ -87,3 +89,4 @@ Version History:
 - 1.2.4 — system proxy mode, quick proxy on/off switching.
 - 1.2.7 - Swizzle — renaming, Curl support, Tor Expert Bundle integration, updated UI.
 - 1.3.0 - Windscribe VPN removed, Usque integration, Added checking for updates, stability improvements. 
+- 1.3.1 - Added Download test file, Speed test is now performed using the native procedure, and the legacy speed*.bat files have been removed, Added Additional arguments for Usque.

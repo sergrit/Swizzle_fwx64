@@ -12,7 +12,7 @@ On Shutdown do exit
 If mListApp('Swizzle64.exe')+mListApp('Swizzle32.exe')>1
 	do exit2	
 Else
-	Public PNameOpera,PNameHola,PNameUsque,PNameDumb,PNameTor,TorMode,Socs5Adr,AdrUsque,UsqueMode
+	Public PNameOpera,PNameHola,PNameUsque,PNameDumb,PNameTor,TorMode,Socs5Adr,AdrUsque,UsqueMode,UsqueAdd
 	Public LinkOpera,LinkHola,LinkUsque,LinkDumb,LinkTor,LinkSwizzle
 	Public LastChOpera,LastChHola,LastChUsque,LastChDumb,LastChTor,LastChSwizzle
 	PNameDumb="dumbproxy.windows-amd64.exe"
@@ -30,7 +30,21 @@ Else
 	px=CreateObject("wscript.shell")
 	ON ERRO do infoerro with erro(),prog(),line(1)
 	*
-	Public Bindadd,Runstart,ArgOpera,ArgHola,Argdumb,DebugMode,SetSystem,SpeedTest,fCurl,Argtor,ArgUsque,ChVer,ChDay
+	Public Bindadd,Runstart,ArgOpera,ArgHola,Argdumb,DebugMode,SetSystem,SpeedTest,SpeedFile,fCurl,Argtor,ArgUsque,ChVer,ChDay
+	*
+	If File(k_drive+'speedcurl.bat')
+		SafeDel(k_drive+'speedcurl.bat')
+	EndIf	
+	If File(k_drive+'speedsocks5.bat')
+		SafeDel(k_drive+'speedsocks5.bat')
+	EndIf	
+	If File(k_drive+'speedsocs5.bat')
+		SafeDel(k_drive+'speedsocs5.bat')
+	EndIf	
+	If File(k_drive+'speedwget.bat')
+		SafeDel(k_drive+'speedwget.bat')
+	EndIf	
+	*
 	If !File("settings.dbf")
 		Create Table settings free (tset c(30),tvalue c(254))
 	Else	
@@ -76,6 +90,14 @@ Else
 		Replace tvalue with "0"
 	EndIf
 	SpeedTest=Alltrim(tvalue)	
+
+	Locate for Alltrim(tset)=="speed-file"
+	If !Found()
+		Append Blank
+		Replace tset with "speed-file"
+		Replace tvalue with [https://proof.ovh.net/files/10Mb.dat]
+	EndIf
+	SpeedFile=Alltrim(tvalue)	
 	
 	Locate for Alltrim(tset)=="run-start"
 	If !Found()
@@ -121,6 +143,13 @@ Else
 	EndIf
 	AdrUsque=Alltrim(tvalue)	
 
+	Locate for Alltrim(tset)=="add-usque"
+	If !Found()
+		Append Blank
+		Replace tset with "add-usque"
+		Replace tvalue with ""
+	EndIf
+	UsqueAdd=Alltrim(tvalue)	
 	
 	Locate for Alltrim(tset)=="arg-dumb"
 	If !Found()

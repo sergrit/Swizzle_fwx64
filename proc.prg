@@ -62,7 +62,6 @@ Function httping
 Local lpf,lcPing
 	lpf=k_drive+"wping.txt"
 	SafeDel(lpf)
-	*px.Run([cmd /c "]+k_drive+[wget.exe" -e https_proxy=127.0.0.1:18080 -O wping.txt https://www.dropbox.com/s/cpan5ywqv9w9eob/wping.txt?dl=1],0,1)
 	Do case
 		Case TorMode
 			px.Run([curl --socks5-hostname ]+m->Socs5Adr+[ -L -o wping.txt https://www.google.com/images/branding/googlelogo/1x/googlelogo_color_272x92dp.png],DebugMode,1)
@@ -102,6 +101,11 @@ Function WaitExe
 				WriteActLog("(*) Used Curl...")
 			Else
 				WriteActLog("(*) Used Wget...")
+				If !File(k_drive+[wget.exe])
+					WriteActLog([(-) Wget.exe file missing...])
+					Wait WINDOW "" TIMEOUT 2
+					Exit
+				EndIf						
 			EndIf
 			stray.TipText="(*) Proxy pinging (1 from 3)..."
 			WriteActLog(stray.TipText)
@@ -364,7 +368,7 @@ Function CoreUsque
 	If File(k_drive+PNameUsque)
 		lip = SUBSTR(AdrUsque, 1, AT(":", AdrUsque) - 1)
 		lport = SUBSTR(AdrUsque, AT(":", AdrUsque) + 1)
-		lstr = Iif(ArgUsque="1"," http-proxy "," socks ")+"-b "+lip+" -p "+lport
+		lstr = Iif(ArgUsque=[1],[ http-proxy ],[ socks ])+[-b ]+lip+[ -p ]+lport+[ ]+UsqueAdd
 		lrun=k_drive+PNameUsque+lstr
 		px.Run(m->lrun,DebugMode,0)
 		If WaitExe(PNameUsque)<6
@@ -498,59 +502,77 @@ Procedure UNsetsysproxy
 	Wait WINDOW "" timeout 1
 	EndActLog()
 EndProc
+*==============================================================================
 Procedure SpeedTest
 	Lparameters lshowlog
-	If fCurl="1"
-		lstbat=["]+k_drive+[speedcurl.bat"]
-	Else
-		lstbat=["]+k_drive+[speedwget.bat"]
+	Local lstarttime,lendtime,lfs,lkoef				
+	If Pcount()>0
+		StartActLog()
 	EndIf
-	If File(lstbat)
-		If Pcount()>0
-			StartActLog()
-		EndIf
-		WriteActLog("")
-		If fCurl="1"
-			WriteActLog("(*) Speed testing used curl...")
+	WriteActLog("")
+	If fCurl="1"
+		WriteActLog("(*) Speed testing used curl...")
+	Else
+		If TorMode .or. (UsqueMode .and. ArgUsque#"1")
+			WriteActLog("(*) Speed testing used curl (socks5 port)...")
 		Else
 			WriteActLog("(*) Speed testing used wget...")
-		EndIf
-		lstfile=["]+k_drive+[st.txt"]
-		If File(lstfile)
-	   		SafeDel(lstfile)
-		EndIf
-		If fCurl="1"
-			Do case 
-				case TorMode
-					px.Run([cmd /c "]+k_drive+["speedsocs5.bat ]+Socs5Adr+[ > st.txt],DebugMode,1)
-				Case  UsqueMode 
-					If ArgUsque="1"
-						px.Run([cmd /c "]+k_drive+["speedcurl.bat ]+AdrUsque+[ > st.txt],DebugMode,1)
-					Else
-						px.Run([cmd /c "]+k_drive+["speedsocs5.bat ]+AdrUsque+[ > st.txt],DebugMode,1)
-					EndIf				
-			Otherwise
-				px.Run([cmd /c "]+k_drive+["speedcurl.bat ]+Bindadd+[ > st.txt],DebugMode,1)
-			EndCase		
-		Else
-			Do case
-				Case UsqueMode
-					If ArgUsque="1"
-						px.Run([cmd /c "]+k_drive+["speedwget.bat ]+AdrUsque+[ > st.txt],DebugMode,1)
-					EndIf	
-			    Otherwise		
-					px.Run([cmd /c "]+k_drive+["speedwget.bat ]+Bindadd+[ > st.txt],DebugMode,1)
-			EndCase 		
-		EndIf
-		If File(lstfile)
-			WriteActLog("(+) Connection speed: "+Chrtran(Chrtran(FILETOSTR(lstfile),Chr(13),""),Chr(10),""))
-	   		SafeDel(lstfile)
-		EndIf
-		If Pcount()>0
-			EndActLog()
-		EndIf
+		EndIf		
+	EndIf	
+	lstfile=k_drive+[speedtest.tmp]
+	If File(lstfile)
+   		SafeDel(lstfile)
+	EndIf
+	lstarttime=Seconds()
+	If fCurl="1"
+		Do case
+			Case TorMode
+				px.Run([curl --socks5-hostname ]+Socs5Adr+[ --max-time 25 -L -o ]+lstfile+[  ]+SpeedFile,DebugMode,1)
+			Case UsqueMode .and. ArgUsque#"1"
+				px.Run([curl --socks5-hostname ]+AdrUsque+[ --max-time 25 -L -o ]+lstfile+[  ]+SpeedFile,DebugMode,1)
+		Otherwise
+				px.Run([curl -x ]+m->Bindadd+[ --max-time 25  -L -o ]+lstfile+[  ]+SpeedFile,DebugMode,1)
+		EndCase	
+	Else
+		Do case
+			Case TorMode
+				px.Run([curl --socks5-hostname ]+Socs5Adr+[ --max-time 25 -L -o ]+lstfile+[  ]+SpeedFile,DebugMode,1)
+			Case UsqueMode .and. ArgUsque#"1"
+				px.Run([curl --socks5-hostname ]+AdrUsque+[ --max-time 25 -L -o ]+lstfile+[  ]+SpeedFile,DebugMode,1)
+		Otherwise
+			px.Run([cmd /c "]+k_drive+[wget.exe" -e https_proxy=]+m->Bindadd+[ --read-timeout=25 --timeout=25 --tries=5 -O ]+lstfile+[  ]+SpeedFile,DebugMode,1)
+		EndCase	
+	EndIf
+	lendtime=Seconds()
+	If File(lstfile)
+		lfs=FileSize(lstfile)
+		lkoef=0.3-(lfs/104857600)*0.2
+		WriteActLog([(+) Connection speed: ]+GetDownloadSpeed(lendtime-lstarttime-lkoef,lfs))
+   		SafeDel(lstfile)		
+	Else
+		WriteActLog([(+) Connection speed: Failed or timed out])
+	EndIf
+	Wait WINDOW "" timeout 2
+	If Pcount()>0
+		EndActLog()
 	EndIf
 EndProc 	
+*==============================================================================
+FUNCTION GetDownloadSpeed
+	Lparameters tcSeconds, tnBytes
+    LOCAL lnSpeed, lcResult
+    If tnBytes#0
+	    lnSpeed = tnBytes / tcSeconds
+	    IF lnSpeed >= 1048576
+	        lcResult = TRANSFORM(lnSpeed / 1048576, "9999.99") + " MB/s"
+	    ELSE
+	        lcResult = TRANSFORM(lnSpeed / 1024, "9999.99") + " KB/s"
+	    ENDIF
+	Else
+		lcResult = [Failed or timed out]
+	EndIf
+    RETURN Alltrim(lcResult)
+ENDFUNC
 *==============================================================================
 Procedure RunWget
 	Lparameters ltproxy,ltcountry
@@ -777,13 +799,13 @@ Procedure LastCheck
 	Lparameters prmTag
 	Local lTag,lv,lt,ldate
 	If ChVer="1"
-		WriteActLog([])
-		WriteActLog("(*) Version checking...")
 		lTag=Substr(prmTag,2,Len(prmTag)-2)
 		lv="LastCh"+lTag
 		lt="lastch-"+lTag
 		ldate=Ctod(&lv )
 		If Date()-Val(ChDay)+1 > ldate
+			WriteActLog([])
+			WriteActLog("(*) Version checking...")
 			Select 0
 			Use settings
 			Locate for Alltrim(tset)==lt
