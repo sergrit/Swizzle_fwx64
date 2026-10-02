@@ -8,7 +8,8 @@ Swizzle can launch and manage the following proxies:
 - Hola VPN;
 - DumbProxy;
 - Tor Expert Bundle (via SOCKS5);
-- Usque. 
+- Usque.
+ 
 Switching between proxies is done directly from the tray menu.
 
 System Proxy Mode.
@@ -90,3 +91,4 @@ Version History:
 - 1.2.7 - Swizzle — renaming, Curl support, Tor Expert Bundle integration, updated UI.
 - 1.3.0 - Windscribe VPN removed, Usque integration, Added checking for updates, stability improvements. 
 - 1.3.1 - Added Download test file, Speed test is now performed using the native procedure, and the legacy speed*.bat files have been removed, Added Additional arguments for Usque.
+- 1.3.2 - Fixed version check, resolved multiple bugs, and optimized algorithms.
