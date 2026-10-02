@@ -206,9 +206,8 @@ EndProc
 Procedure StartRun
 	If File("actlog.log")
 		SafeDel(k_drive+[actlog.log])			
+		ClearActLog()
 	EndIf
-	ClearActLog()
-	ClosedAll()
 EndProc
 ****************************************
 Function CoreDumb
@@ -227,29 +226,37 @@ Function CoreDumb
 	 Return lret
 EndFunc
 ****************************************
-Procedure RunDumb
-	StartRun()
+Function RunDumb
+Lparameters lshowlog
+	Local lret
+	lret=.f.
+	If Pcount()>0
+		StartRun()
+	Else
+		WriteActLog([])
+	EndIf	
 	TorMode=.f.
 	UsqueMode=.f.
 	WriteActLog([(+) Dumbproxy is starting...])
+	ClosedAll()
 	If !CoreDumb()
 		If File(k_drive+PNameDumb)
 			NotRsp([Dumbproxy ])
 		EndIf	
 	Else
-		If SetSystem="1"
-			Setsysproxy()
-		EndIf	
+		LastCheck("-dumb-")
 		If SpeedTest="1"	
 			Speedtest()
 		EndIf
-		LastCheck("-dumb-")
+		lret=.t.
 	EndIf
-	EndActLog()
-EndProc
+	If Pcount()>0
+		EndActLog()
+	EndIf	
+	Return lret
+EndFunc
 ****************************************
 Function CoreTor
-Lparameters lcountry
 	lret=.f.
 	If File(Alltrim(Argtor))
 		px.Run([cmd /c "]+Argtor+[" --SocksPort ]+Socs5Adr,DebugMode,0)
@@ -265,24 +272,35 @@ Lparameters lcountry
 	 Return lret
 EndFunc
 ****************************************
-Procedure RunTor
-Lparameters lcountry
-	StartRun()
+Function RunTor
+Lparameters lshowlog
+	Local lret
+	lret=.f.
+	If Pcount()>0
+		StartRun()
+	Else
+		WriteActLog([])
+	EndIf	
 	TorMode=.t.
 	UsqueMode=.f.
 	WriteActLog([(+) Tor proxy is starting...])
-	If !CoreTor(lcountry)
+	ClosedAll()
+	If !CoreTor()
 		If File(Alltrim(Argtor))
 			NotRsp([Tor proxy "])
 		EndIf	
 	Else
+		LastCheck("-tor-")
 		If SpeedTest="1"	
 			Speedtest()
 		EndIf
-		LastCheck("-tor-")
+		lret=.t.
 	EndIf
-	EndActLog()
-EndProc
+	If Pcount()>0
+		EndActLog()
+	EndIf	
+	Return lret
+EndFunc
 ****************************************
 Function CoreOpera
 Lparameters lcountry
@@ -301,27 +319,35 @@ Lparameters lcountry
 	 Return lret
 EndFunc
 ****************************************
-Procedure RunOpera
-Lparameters lcountry
-	StartRun()
+Function RunOpera
+Lparameters lcountry, lshowlog
+	Local lret
+	lret=.f.
+	If Pcount()>1
+		StartRun()
+	Else
+		WriteActLog([])
+	EndIf
 	TorMode=.f.
 	UsqueMode=.f.
 	WriteActLog([(+) Opera proxy is starting...])
+	ClosedAll()
 	If !CoreOpera(lcountry)
 		If File(k_drive+PNameOpera)
 			NotRsp([Opera proxy "]+lcountry+["])
 		EndIf	
 	Else
-		If SetSystem="1"
-			Setsysproxy()
-		EndIf
+		LastCheck("-opera-")
 		If SpeedTest="1"	
 			Speedtest()
-		EndIf	
-		LastCheck("-opera-")
+		EndIf
+		lret=.t.
 	EndIf
-	EndActLog()
-EndProc
+	If Pcount()>1
+		EndActLog()
+	EndIf
+	Return lret	
+EndFunc
 ****************************************
 Function CoreHola
 Lparameters lcountry
@@ -340,27 +366,35 @@ Lparameters lcountry
 	Return lret
 EndFunc
 ****************************************
-Procedure RunHola 
-Lparameters lcountry
-	StartRun()
+Function RunHola 
+Lparameters lcountry, lshowlog
+	Local lret
+	lret=.f.
+	If Pcount()>1
+		StartRun()
+	Else
+		WriteActLog([])
+	EndIf
 	TorMode=.f.
 	UsqueMode=.f.
 	WriteActLog([(+) Hola proxy is starting...])
+	ClosedAll()
 	If !CoreHola(lcountry)
 		If File(k_drive+PNameHola)
 			NotRsp([Hola proxy "]+lcountry+["])
 		EndIf	
 	Else
-		If SetSystem="1"
-			Setsysproxy()
-		EndIf	
+		LastCheck("-hola-")
 		If SpeedTest="1"	
 			Speedtest()
 		EndIf	
-		LastCheck("-hola-")
+		lret=.t.
 	EndIf
-	EndActLog()	
-EndProc
+	If Pcount()>1
+		EndActLog()	
+	EndIf	
+	Return lret
+EndFunc
 ****************************************
 Function CoreUsque
 	Local lip,lport,lstr
@@ -383,33 +417,41 @@ Function CoreUsque
 	Return lret
 EndFunc
 ****************************************
-Procedure RunUsque 
-Lparameters lcountry
-	StartRun()
+Function RunUsque 
+Lparameters lshowlog
+	Local lret
+	lret=.f.
+	If Pcount()>0
+		StartRun()
+	Else
+		WriteActLog([])
+	EndIf
 	TorMode=.f.
 	UsqueMode=.t.
 	If File(k_drive+"config.json")
 		WriteActLog([(+) Usque proxy is starting...])
+		ClosedAll()
 		If !CoreUsque()
 			If File(k_drive+PNameUsque)
 				NotRsp([Usque proxy ])
 			EndIf	
 		Else
-			If SetSystem="1"
-				Setsysproxy()
-			EndIf	
+			LastCheck("-usque-")
 			If SpeedTest="1"	
 				Speedtest()
 			EndIf	
-			LastCheck("-usque-")
+			lret=.t.
 		EndIf
 	Else
 		WriteActLog([(-) For Usque to work, a "config.json" file is required! You can create it by running the command "./usque register".])
 		stray.TipText = [(+) Do Nothing...]
 		Wait WINDOW "" timeout 5
 	EndIf
-	EndActLog()	
-EndProc
+	If Pcount()>0
+		EndActLog()	
+	EndIf	
+	Return lret
+EndFunc
 *==============================================================================
 Procedure SAbout
 	Do case
@@ -455,7 +497,7 @@ Declare INTEGER DeleteFile IN kernel32 STRING lpFileName
 = DeleteFile (Alltrim(m->lpath))
 Clear Dlls "DeleteFile"
 EndFunc	 
-****************************************
+*==============================================================================
 Function SafeDel
 Lparameters fsfile
 Local lfret	
@@ -473,6 +515,7 @@ lfret=.f.
 		ENDIF
 	ENDFOR		
 EndFunc 
+*==============================================================================
 Function FileSize
 	Lparameters fsfile
 	Local lnFileHandle, lnFileSize
@@ -481,26 +524,47 @@ Function FileSize
 	= FCLOSE(lnFileHandle)
 	Return lnFileSize 
 EndFunc
+*==============================================================================
 Procedure Setsysproxy
-	StartActLog()
-	If !TorMode .and. !(UsqueMode .and. ArgUsque#"1") 
-		WriteActLog([(+) Set Bind Address as System...]+Chr(13)+Chr(10))
-		px.Run([cmd /c "powershell -command ""$reg = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings'; Set-ItemProperty -Path $reg -Name ProxyEnable -Value 1; Set-ItemProperty -Path $reg -Name ProxyServer -Value ']+Bindadd+['"""], 0, 1)
+	Lparameters lshowlog
+	If Pcount()>0
+		StartActLog()
+	EndIf
+	lSBA=""
+	If !TorMode 
+		If UsqueMode 
+			If ArgUsque="1"
+				lSBA=AdrUsque
+			EndIf
+		Else 
+			lSBA=Bindadd
+		EndIf
+	EndIf	
+	If !Empty(lSBA)
+		WriteActLog([(+) Set Bind Address as System to: ]+Bindadd+Chr(13)+Chr(10))
+		px.Run([cmd /c "powershell -command ""$reg = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings'; Set-ItemProperty -Path $reg -Name ProxyEnable -Value 1; Set-ItemProperty -Path $reg -Name ProxyServer -Value ']+lSBA+['"""], 0, 1)
 		WriteActLog([(*) Done.])
 	Else
 		WriteActLog([])
 		WriteActLog([(-) Windows does not support SOCKS5 system proxy.])
 	EndIf
 	Wait WINDOW "" timeout 1
-	EndActLog()
+	If Pcount()>0
+		EndActLog()
+	EndIf
 EndProc
+*==============================================================================
 Procedure UNsetsysproxy
-	StartActLog()
-	WriteActLog([(+) Unset Bind Address as System...]+Chr(13)+Chr(10))
-	px.Run([cmd /c "powershell -command ""$reg = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings'; Set-ItemProperty -Path $reg -Name ProxyEnable -Value 0; Remove-ItemProperty -Path $reg -Name ProxyServer -ErrorAction SilentlyContinue"""], 0, 1)
-	WriteActLog([(*) Done.])
-	Wait WINDOW "" timeout 1
-	EndActLog()
+	If !TorMode 
+		If !(UsqueMode .and. ArgUsque#"1")
+			StartActLog()
+			WriteActLog([(+) Unset Bind Address as System...]+Chr(13)+Chr(10))
+			px.Run([cmd /c "powershell -command ""$reg = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Internet Settings'; Set-ItemProperty -Path $reg -Name ProxyEnable -Value 0; Remove-ItemProperty -Path $reg -Name ProxyServer -ErrorAction SilentlyContinue"""], 0, 1)
+			WriteActLog([(*) Done.])
+			Wait WINDOW "" timeout 1
+			EndActLog()
+		EndIf
+	EndIf	
 EndProc
 *==============================================================================
 Procedure SpeedTest
@@ -869,19 +933,25 @@ FUNCTION GetGithubVersion
 EndFunc
 ***********************************************************************************
 FUNCTION GetTorVersion
-	Lparameters tcFile
+    Lparameters tcFile
     LOCAL lcHtml, loRegEx, loMatches, lcVersion
     lcVersion = ""
     lcHtml = FILETOSTR(tcFile)
     loRegEx = CREATEOBJECT("VBScript.RegExp")
     loRegEx.Global = .F.
     loRegEx.IgnoreCase = .T.
-    loRegEx.Pattern = "\bv?\d+(?:\.\d+){1,3}\b"
+    loRegEx.Pattern = "\bstable\b[\s\S]{0,100}?\btor\s+(\d+(?:\.\d+){3})\b"
     IF loRegEx.Test(lcHtml)
         loMatches = loRegEx.Execute(lcHtml)
-        lcVersion = loMatches.Item(0).Value
+        lcVersion = loMatches.Item(0).SubMatches(0)
+    ELSE
+        loRegEx.Pattern = "\btor\s+(\d+(?:\.\d+){3})\b[\s\S]{0,100}?\bstable\b"
+        IF loRegEx.Test(lcHtml)
+            loMatches = loRegEx.Execute(lcHtml)
+            lcVersion = loMatches.Item(0).SubMatches(0)
+        ENDIF
     ENDIF
-    RETURN lcVersion
+   RETURN lcVersion
 EndFunc
 *========================================================================================================
 Function GetIVersion
@@ -889,6 +959,9 @@ Function GetIVersion
 	Local dlink,lver,lv
 	lv="Link"+Substr(prmTag,2,Len(prmTag)-2)
 	dlink = &lv
+	If "github"$Lower(dlink) .and. !("releases"$Lower(dlink))
+		dlink=Addbs(dlink)+"releases"
+	endif	
 	*****************************************
 	If File(k_drive+"dproxy.html")
 		Safedel(k_drive+"dproxy.html")

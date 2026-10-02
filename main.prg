@@ -289,34 +289,40 @@ Else
 		Select 0
 		Use proxyvpn
 	EndIf		
+	*
+	StartRun()
+	lldate=Ctod(LastChSwizzle)
+	If Date()-Val(ChDay)+1 > lldate
+		LastCheck("-swizzle-")
+	EndIf
+	*
+	lcase=.f.
 	Do case
 		Case Lower(Alltrim(Runstart))=="o"
-			RunOpera("EU")
+			If RunOpera("EU")
+				lcase=.t.
+			EndIf	
 		Case Lower(Alltrim(Runstart))=="h"
-			RunHola("en")			
+			If RunHola("en")			
+				lcase=.t.
+			EndIf	
 		Case Lower(Alltrim(Runstart))=="u"
-			RunUsque()
+			If RunUsque()
+				lcase=.t.
+			EndIf	
 		Case Lower(Alltrim(Runstart))=="d"
-			RunDumb()
+			If RunDumb()
+				lcase=.t.
+			EndIf	
 		Case Lower(Alltrim(Runstart))=="t"
 			RunTor()
 		Otherwise
-			If SetSystem="1"
-				StartRun()
-				Setsysproxy()
-				LastCheck("-swizzle-")
-				EndActLog()
-				stray.TipText = [(+) Set Bind Address as System...]
-			Else
-				lldate=Ctod(LastChSwizzle)
-				If Date()-Val(ChDay)+1 > lldate
-					StartRun()
-					LastCheck("-swizzle-")
-					EndActLog()
-				EndIf
-				stray.TipText = [(+) Do Nothing...]
-			EndIf	
+			stray.TipText = [(+) Do Nothing...]
 	EndCase
+	If lcase .and. SetSystem="1"
+		Setsysproxy()
+	EndIf
+	EndActLog()
 	Read events
 EndIf	
 *---------------------------------------------------
